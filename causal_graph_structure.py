@@ -23,6 +23,14 @@ class CausalPart:
 class CausalModel:
     def __init__(self):
         self.parts = []
+        self.observable_parts = []
+        self.non_interactable_parts = []
+
+    def set_observable_parts(self, observable_parts):
+        self.observable_parts = observable_parts
+    
+    def set_non_interactable_parts(self, interactable_parts):
+        self.non_interactable_parts = interactable_parts
 
     def add_part_full(self, part_id, caused_by_ids, causes_ids):
         if not self.find_part(part_id):
@@ -118,13 +126,15 @@ class CausalModel:
                 current_caused_by_list = self.find_failures_caused_by_part(cause.part_id, current_caused_by_list)
         return current_caused_by_list
     
-    def find_observables_from_failure(self, part_id, observable_list):
+    def find_observables_from_failure(self, part_id):
         '''returns list of working and not working observables'''
         working_observables = []
         not_working_observables = []
 
+        assert self.observable_parts
+
         other_parts_failing = self.find_failures_caused_by_part(part_id, [])
-        for obs_part_id in observable_list:
+        for obs_part_id in self.observable_parts:
             observable_failing = False
             for failing_part in other_parts_failing:
                 if failing_part.part_id == obs_part_id:
@@ -145,7 +155,7 @@ class CausalModel:
         return False
 
     def init_from_matrix(self, matrix):
-        '''TODO: add function which turns a graph in matrix'''
+        '''TODO: add function which turns a graph in matrix form into CausalModel stucture'''
         # assert self.parts.empty()
         
         # for ridx in range(matrix.shape[0]):
@@ -166,5 +176,7 @@ test_cm.add_part_full('i3', [], ['i1', 'i2'])
 
 # part_list_part = test_cm.find_all_causes_for_part('L1', [])
 parts_list_failure = test_cm.find_points_of_failure_from_observerables(['L2'], ['L1'])
-obs_working, obs_failing = test_cm.find_observables_from_failure('R2', ['L1', 'L2'])
-print(test_cm.parts)
+test_cm.set_observable_parts(['L1', 'L2'])
+obs_working, obs_failing = test_cm.find_observables_from_failure('R2')
+parts_to_test = test_cm.find_points_of_failure_from_observerables(obs_working, obs_failing)
+print(parts_to_test)
