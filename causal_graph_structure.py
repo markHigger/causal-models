@@ -122,7 +122,7 @@ class CausalModel:
                 current_cause_list = self.find_all_causes_for_part(caused_by.part_id, current_cause_list)
         return current_cause_list
 
-    def find_points_of_failure_from_observerables(self, part_ids_working, part_ids_not_working):
+    def find_potential_root_causes_from_observerables(self, part_ids_working, part_ids_not_working):
 
         # Initalize possible causes to all parts
         potential_causes_ids = []
@@ -150,7 +150,12 @@ class CausalModel:
             #find  difference of part causes and current cause list, removing parts that would cause observable successes to fail
             potential_causes_ids = list(set(potential_causes_ids) - set(part_causes_ids))
 
-        return potential_causes_ids
+        potential_causes_ids_interactable = []
+        for part_id in potential_causes_ids:
+            if self.get_part_from_id(part_id).is_interactable:
+                potential_causes_ids_interactable.append(part_id)
+
+        return potential_causes_ids_interactable
 
     def find_failures_caused_by_part(self, part_id, current_caused_by_list):
         # Recursive function which finds all the parts which the target part will cause to fail
@@ -211,9 +216,9 @@ if __name__ == "__main__":
     test_cm.add_part_full('i3', [], ['i1', 'i2'])
 
     # part_list_part = test_cm.find_all_causes_for_part('L1', [])
-    parts_list_failure = test_cm.find_points_of_failure_from_observerables(['L2'], ['L1'])
+    parts_list_failure = test_cm.find_potential_root_causes_from_observerables(['L2'], ['L1'])
     test_cm.set_observable_parts(['L1', 'L2'])
     test_cm.set_non_interactable_parts(['i1', 'i2', 'i3'])
     obs_working, obs_failing = test_cm.find_observables_from_failure('R2')
-    parts_to_test = test_cm.find_points_of_failure_from_observerables(obs_working, obs_failing)
+    parts_to_test = test_cm.find_potential_root_causes_from_observerables(obs_working, obs_failing)
     print(parts_to_test)

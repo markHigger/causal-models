@@ -11,6 +11,31 @@ def compute_expected_value_frequency(failure_rates):
     
     return expected_instructions
 
+def compute_expected_value_causal(causal_model, part_frequencies_df):
+    '''
+    E[M_c] = sum(E[Mb|p_n] * P(p_n))
+    E[Mb|p_n] = 1/N * N*(N+1) / 2
+    E[M_c] - expected value of the number instructions it will take for the causal algorthm for a given model
+    Mb - Markov blanket of the model for parts to check
+    p_n - part n
+    P(p_n) - chance that p_n is the failed part
+    
+    '''
+
+    expected_value_total = 0
+    for idx, row in part_frequencies_df.iterrows():
+        part_id = row['part ids']
+        #find observables for a given part failure
+        obs_working, obs_failing = causal_model.find_observables_from_failure(part_id)
+        markov_blanket = causal_model.find_potential_root_causes_from_observerables(obs_working, obs_failing)
+        num_parts = len(markov_blanket)
+        expected_value_blanket = (num_parts + 1)/2
+        expected_value_total += expected_value_blanket * row['failure rates']
+
+
+
+        pass
+    return expected_value_total
 
 
 
@@ -27,7 +52,8 @@ cm_1.set_observable_parts(['L1', 'L2'])
 cm_1.set_non_interactable_parts(['i1', 'i2', 'i3'])
 
 # frequecies = np.array(range(1,6))
-frequecies = [1, 1, 1, 1, 1]
+# frequecies = [1, 1, 1, 1, 1]
+frequecies = [0.8, 0.05, 0.05, 0.05, 0.05]
 frequecies = frequecies / np.sum(frequecies)
 frequecies = frequecies.tolist()
 
@@ -37,9 +63,8 @@ cm_1_part_failure_rates = {'part ids': cm_1.get_interactable_part_ids(),
 cm_1_part_failure_rates = pd.DataFrame(data=cm_1_part_failure_rates)
 cm_1_part_failure_rates = cm_1_part_failure_rates.sort_values(by=['failure rates'])
 
-expected_value = compute_expected_value_frequency(cm_1_part_failure_rates['failure rates'].tolist())
+expected_value_f = compute_expected_value_frequency(cm_1_part_failure_rates['failure rates'].tolist())
 
+expected_value_c = compute_expected_value_causal(cm_1, cm_1_part_failure_rates)
 
 # print(cm_1.get_part_failure_rates(['R1', 'L2']))
-
-pass
