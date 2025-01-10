@@ -5,7 +5,7 @@ class CausalPart:
         self.part_id = part_id #string 
         self.caused_by = [] #list of CausalPart types
         self.causes = [] #list of CausalPart type
-        self.failure_prob = False
+        self.failure_prob = float("nan")
         self.is_observable = False
         self.is_interactable = True
 
@@ -40,9 +40,9 @@ class CausalModel:
             self.get_part_from_id(part_id).is_interactable = False
             self.get_part_from_id(part_id).failure_prob = 0
     
-    def set_part_frequencies(self, part_ids, part_frequencies):
+    def set_part_failure_rates(self, part_ids, part_failure_rates):
         for part_idx, part_id in enumerate(part_ids):
-            self.get_part_from_id(part_id).failure_prob = part_frequencies[part_idx]
+            self.get_part_from_id(part_id).failure_prob = part_failure_rates[part_idx]
 
     def get_part_from_id(self, part_id):
         # returns CausalPart part in part list from part id
@@ -50,6 +50,31 @@ class CausalModel:
             if part.part_id == part_id:
                 return part
         return False
+    
+    def get_parts_from_ids(self, part_ids):
+        parts = []
+        for part_id in part_ids:
+            part_ids.append(self.get_part_from_id(part_id))
+        return parts
+    
+    def get_part_ids_from_parts(self, parts):
+        part_ids = []
+        for part in parts:
+            part_ids.append(part.part_id)
+        return part_ids
+    
+    def get_part_failure_rates(self, part_ids):
+        frequencies = []
+        for part_id in part_ids:
+            frequencies.append(self.get_part_from_id(part_id).failure_prob)
+        return frequencies
+
+    def get_interactable_part_ids(self):
+        interactable_parts = []
+        for part in self.parts:
+            if part.is_interactable:
+                interactable_parts.append(part.part_id)
+        return interactable_parts
     
     def add_part_full(self, part_id, caused_by_ids, causes_ids):
         if not self.get_part_from_id(part_id):
