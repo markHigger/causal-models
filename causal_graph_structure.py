@@ -100,7 +100,42 @@ class CausalModel:
 
         return potential_causes_ids
 
+    def find_failures_caused_by_part(self, part_id, current_caused_by_list):
+        # Recursive function which finds all the parts which the target part will cause to fail
+        # returns list of part objects which can cause the target part to fail
+
+        # Initilize current_cause_list to [] for root iteration
+        root_part = self.find_part(part_id)
+        current_caused_by_list.append(root_part)
+
+        for cause in root_part.causes:
+            part_is_excluded = False
+            #check if part is already in the cause list, and run function on new cause part
+            for excluded_part in current_caused_by_list:
+                if cause == excluded_part:
+                    part_is_excluded = True
+            if not part_is_excluded:
+                current_caused_by_list = self.find_failures_caused_by_part(cause.part_id, current_caused_by_list)
+        return current_caused_by_list
     
+    def find_observables_from_failure(self, part_id, observable_list):
+        '''returns list of working and not working observables'''
+        working_observables = []
+        not_working_observables = []
+
+        other_parts_failing = self.find_failures_caused_by_part(part_id, [])
+        for obs_part_id in observable_list:
+            observable_failing = False
+            for failing_part in other_parts_failing:
+                if failing_part.part_id == obs_part_id:
+                    observable_failing = True
+            if observable_failing:
+                not_working_observables.append(obs_part_id)
+            else:
+                working_observables.append(obs_part_id)
+
+        return working_observables, not_working_observables
+
 
     def find_part(self, part_id):
         # returns CausalPart part in part list from part id
@@ -109,12 +144,13 @@ class CausalModel:
                 return part
         return False
 
-    # def init_from_matrix(self, matrix):
-    #     assert self.parts.empty()
+    def init_from_matrix(self, matrix):
+        '''TODO: add function which turns a graph in matrix'''
+        # assert self.parts.empty()
         
-    #     for ridx in range(matrix.shape[0]):
-    #         part = CausalPart(ridx)
-    #         for cidx in range(matrix.shape[1]):
+        # for ridx in range(matrix.shape[0]):
+        #     part = CausalPart(ridx)
+        #     for cidx in range(matrix.shape[1]):
 
 
         
@@ -130,18 +166,5 @@ test_cm.add_part_full('i3', [], ['i1', 'i2'])
 
 # part_list_part = test_cm.find_all_causes_for_part('L1', [])
 parts_list_failure = test_cm.find_points_of_failure_from_observerables(['L2'], ['L1'])
+obs_working, obs_failing = test_cm.find_observables_from_failure('R2', ['L1', 'L2'])
 print(test_cm.parts)
-
-circuit1_cm = np.zeros([9,9])
-circuit1_cm[0, 6] = 1 # R1 -> i1
-circuit1_cm[1, 7] = 1 # R2 -> i2
-circuit1_cm[2, 8] = 1 # R3 -> i3
-circuit1_cm[3, 6] = 1 # L1 -> i1
-circuit1_cm[6, 3] = 1 # i1 -> L1
-circuit1_cm[4, 7] = 1 # L2 -> i2
-circuit1_cm[7, 4] = 1 # i2 -> L2
-circuit1_cm[8, 6] = 1 # i3 -> i1
-circuit1_cm[8, 7] = 1 # i3 -> i2
-
-# c1_cm = CausalModel()
-# c1_cm.from_matrix(circuit1_cm)
